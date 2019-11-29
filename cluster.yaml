@@ -1,0 +1,33 @@
+apiVersion: eksctl.io/v1alpha5
+kind: ClusterConfig
+
+metadata:
+  name: aca-cluster
+  region: eu-west-2
+
+nodeGroups:
+  - name: ng-1
+    instanceType: m5.xlarge
+    minSize: 3
+    maxSize: 5
+    desiredCapacity: 3
+    privateNetworking: true
+    securityGroups:
+      withShared: true
+      withLocal: true
+    iam:
+      withAddonPolicies:
+        imageBuilder: true
+        autoScaler: true
+        externalDNS: true
+        certManager: true
+        appMesh: true
+        ebs: true
+        fsx: true
+        efs: true
+        albIngress: true
+        xRay: true
+        cloudWatch: true
+    labels: { role: workers, purpose: ACA_development, team: ACA, account: Apps }
+    tags:
+      'environment:Owner': 'ACA'

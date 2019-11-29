@@ -1,0 +1,62 @@
+customLdifFiles:
+  testldif.ldif: |-
+    dn: ou=users,dc=example,dc=org
+    objectclass: organizationalUnit
+    objectclass: top
+    ou: users
+
+    dn: cn=user1,ou=users,dc=example,dc=org
+    cn: user1
+    gidnumber: 500
+    givenname: user1
+    homedirectory: /home/users/user1
+    loginshell: /bin/sh
+    objectclass: inetOrgPerson
+    objectclass: posixAccount
+    objectclass: top
+    sn: user1
+    uid: user1
+    uidnumber: 1003
+    mail: user1@example.com
+    userpassword: {MD5}JMnhXlKvxHwiW3V+e+4fnQ==
+
+    dn: cn=user2,ou=users,dc=example,dc=org
+    cn: user2
+    gidnumber: 600
+    givenname: user2
+    homedirectory: /home/users/user2
+    loginshell: /bin/sh
+    objectclass: inetOrgPerson
+    objectclass: posixAccount
+    objectclass: top
+    sn: user2
+    uid: user2
+    uidnumber: 1004
+    mail: user2@example.com
+    userpassword: {MD5}fljWO2AZfOtVocSHmJo3IA==
+
+    dn: cn=user3,ou=users,dc=example,dc=org
+    cn: user3
+    gidnumber: 700
+    givenname: user3
+    homedirectory: /home/users/user3
+    loginshell: /bin/sh
+    objectclass: inetOrgPerson
+    objectclass: posixAccount
+    objectclass: top
+    sn: user3
+    uid: user3
+    uidnumber: 1005
+    mail: user3@example.com
+    userpassword: {MD5}kod69wpF/Wou1/6B4SNreA==
+
+    dn: cn=myGroup,ou=users,dc=example,dc=org
+    cn: myGroup
+    objectClass: top
+    objectClass: groupOfNames
+    member: cn=user1,ou=users,dc=example,dc=org
+    member: cn=user2,ou=users,dc=example,dc=org
+    member: cn=user3,ou=users,dc=example,dc=org
+
+adminPassword: "admin"
+configPassword: "admin"

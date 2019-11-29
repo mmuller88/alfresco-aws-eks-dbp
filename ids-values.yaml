@@ -1,0 +1,318 @@
+PipelineSecrets: {}
+cleanup:
+  Annotations:
+    helm.sh/hook: pre-delete
+    helm.sh/hook-delete-policy: hook-succeeded
+  Args:
+    - --cleanup
+
+global:
+  keycloak:
+    resource: alfresco
+    realm: alfresco
+    client: alfresco
+    url: "http://alfresco-identity-service.<hostedZone>/auth"
+
+alfresco-process-services:
+  enabled: true
+  license:
+    secretName: licenseaps
+  alfresco-infrastructure:
+    enabled: false
+  processEngine:
+    environment:
+      IDENTITY_SERVICE_ENABLED: "true"
+      IDENTITY_SERVICE_REALM: "alfresco"
+      IDENTITY_SERVICE_SSL_REQUIRED: "none"
+      IDENTITY_SERVICE_RESOURCE: "alfresco"
+      IDENTITY_SERVICE_PRINCIPAL_ATTRIBUTE: "email"
+      IDENTITY_SERVICE_PUBLIC_CLIENT: "true"
+      IDENTITY_SERVICE_ALWAYS_REFRESH_TOKEN: "true"
+      IDENTITY_SERVICE_AUTODETECT_BEARER_ONLY: "true"
+      IDENTITY_SERVICE_TOKEN_STORE: "cookie"
+      IDENTITY_SERVICE_ENABLE_BASIC_AUTH: "true"
+      IDENTITY_SERVICE_AUTH: "http://alfresco-identity-service.<hostedZone>/auth"
+      JAVA_OPTS: " -Dldap.authentication.enabled=false
+        -Dldap.synchronization.full.enabled=true
+        -Dldap.synchronization.full.cronExpression=\"0 0 0 \\* \\* ?\"
+        -Dldap.synchronization.differential.enabled=true
+        -Dldap.synchronization.differential.cronExpression=\"0 0 \\*/4 \\* \\* ?\"
+        -Dldap.authentication.java.naming.provider.url=\"ldap://jx-dbp-ids-openldap.jx-dbp-ids:389\"
+        -Dldap.synchronization.java.naming.security.principal=cn=admin,dc=example,dc=org
+        -Dldap.synchronization.java.naming.security.credentials=admin
+        -Dldap.synchronization.userSearchBase=ou=users,dc=example,dc=org
+        -Dldap.synchronization.groupSearchBase=cn=myGroup,ou=users,dc=example,dc=org"
+  postgresql:
+    persistence:
+      subPath: "alfresco-process-services/database-data"
+  persistence:
+    subPath: "alfresco-process-services/process-data"
+  resources:
+    requests:
+      memory: "2000Mi"
+    limits:
+      memory: "3000Mi"
+alfresco-infrastructure:
+  enabled: true
+  nginx-ingress:
+    rbac:
+      create: true
+    controller:
+      config:
+        ssl-redirect: "false"
+        server-tokens: "false"
+      scope:
+        enabled: true
+      publishService:
+        enabled: true
+      service:
+        targetPorts:
+          http: http
+          https: http
+        annotations:
+          external-dns.alpha.kubernetes.io/hostname: "*.<hostZone>"
+          service.beta.kubernetes.io/aws-load-balancer-connection-idle-timeout: "3600"
+          service.beta.kubernetes.io/aws-load-balancer-ssl-cert: "arn:aws:acm:eu-west-2:<acc-number>:certificate/<cert-id>"
+          service.beta.kubernetes.io/aws-load-balancer-ssl-ports: https
+          service.beta.kubernetes.io/aws-load-balancer-ssl-negotiation-policy: "ELBSecurityPolicy-TLS-1-2-2017-01"
+  persistence:
+    enabled: true
+    baseSize: 2Gi
+    storageClass: #enable and define if you already have a custom storage class defined
+      enabled: true
+      accessModes:
+        - ReadWriteMany
+      name: "jx-dbp-ids-sc"
+  activemq:
+    persistence:
+      subPath: "alfresco-infrastructure/activemq-data-infra"
+  alfresco-identity-service:
+    keycloak:
+      postgresql:
+        persistence:
+          subPath: "alfresco-identity-service/database-data"
+    realm:
+      alfresco:
+        extraAdminUserRealmRoles:
+          - "ACTIVITI_ADMIN"
+          - "ACTIVITI_MODELER"
+          - "ACTIVITI_USER"
+        extraRealmRoles:
+          - name: "ACTIVITI_USER"
+          - name: "ACTIVITI_MODELER"
+          - name: "ACTIVITI_ADMIN"
+        extraGroups:
+          - name: "hr"
+          - name: "testgroup"
+        extraUsers:
+          - username: client
+            enabled: true
+            firstName: "client"
+            lastName: User
+            email: "client@test.com"
+            credentials:
+              - type: password
+                value: client
+            realmRoles:
+              - "offline_access"
+              - "uma_authorization"
+              - "ACTIVITI_USER"
+            clientRoles:
+              account:
+                - "manage-account"
+                - "view-profile"
+          - username: modeler
+            enabled: true
+            firstName: "modeler"
+            lastName: User
+            email: "modeler@test.com"
+            credentials:
+              - type: password
+                value: password
+            realmRoles:
+              - "offline_access"
+              - "uma_authorization"
+              - "ACTIVITI_MODELER"
+            clientRoles:
+              account:
+                - "manage-account"
+                - "view-profile"
+          - username: hruser
+            enabled: true
+            firstName: "hruser"
+            lastName: hruser
+            email: "hruser@test.com"
+            credentials:
+              - type: password
+                value: password
+            realmRoles:
+              - "offline_access"
+              - "uma_authorization"
+              - "ACTIVITI_USER"
+            clientRoles:
+              account:
+                - "manage-account"
+                - "view-profile"
+            groups:
+              - "hr"
+          - username: hradmin
+            enabled: true
+            firstName: "hradmin"
+            lastName: hradmin
+            email: "hradmin@test.com"
+            credentials:
+              - type: password
+                value: password
+            realmRoles:
+              - "offline_access"
+              - "uma_authorization"
+              - "ACTIVITI_USER"
+              - "ACTIVITI_ADMIN"
+            clientRoles:
+              account:
+                - "manage-account"
+                - "view-profile"
+            groups:
+              - "hr"
+          - username: testuser
+            enabled: true
+            firstName: "testuser"
+            lastName: testuser
+            email: "testuser@test.com"
+            credentials:
+              - type: password
+                value: password
+            realmRoles:
+              - "offline_access"
+              - "uma_authorization"
+              - "ACTIVITI_USER"
+            clientRoles:
+              account:
+                - "manage-account"
+                - "view-profile"
+            groups:
+              - "testgroup"
+          - username: testadmin
+            enabled: true
+            firstName: "testadmin"
+            lastName: testadmin
+            email: "testadmin@test.com"
+            credentials:
+              - type: password
+                value: password
+            realmRoles:
+              - "offline_access"
+              - "uma_authorization"
+              - "ACTIVITI_USER"
+              - "ACTIVITI_ADMIN"
+            clientRoles:
+              account:
+                - "manage-account"
+                - "view-profile"
+            groups:
+              - "testgroup"
+        client:
+          webOrigins:
+            - "*"
+          redirectUris:
+            - "*"
+
+alfresco-content-services:
+  enabled: true
+  registryPullSecrets: quay-registry-secret
+  postgresql:
+    persistence:
+      subPath: "alfresco-content-services/database-data"
+  persistence:
+    repository:
+      data:
+        subPath: "alfresco-content-services/repository-data"
+  s3connector:
+    enabled: true
+    config:
+      bucketName: aca-eks-acs
+      bucketLocation: eu-west-2
+      autoLowerCaseBucketName: true
+    secrets:
+      accessKey: AKIASRRSJ7TBKOUKIDNP
+  messageBroker:
+    url:
+    user: admin
+    password: admin
+  alfresco-infrastructure:
+    enabled: false
+    activemq:
+      enabled: false
+  repository:
+    image:
+      repository: quay.io/alfresco/alfresco-digital-workspace-repo
+      tag: "6.1.0.2"
+    environment:
+      # The IDENTITY_SERVICE_URI should contain the details of the ingress host and port.
+      IDENTITY_SERVICE_URI: "http://alfresco-identity-service.<hostedZone>/auth"
+      JAVA_OPTS: ' -Dsolr.base.url=/solr
+        -Dsolr.secureComms=none
+        -Dindex.subsystem.name=solr6
+        -Dalfresco.cluster.enabled=true
+        -Ddeployment.method=HELM_CHART
+        -Dcsrf.filter.enabled=false
+        -Xms2000M -Xmx2000M
+        -Daos.baseUrlOverwrite=http://alfresco-cs-repository.<hostedZone>/alfresco/aos
+        -Dopencmis.context.override=true
+        -Dopencmis.servletpath.override=true
+        -Dopencmis.server.override=true
+        -Dopencmis.server.value=http://alfresco-cs-repository.<hostedZone>
+        -Dauthentication.chain=identity-service1:identity-service,alfrescoNtlm1:alfrescoNtlm,ldap1:ldap
+        -Didentity-service.enable-basic-auth=true
+        -Didentity-service.authentication.validation.failure.silent=false
+        -Didentity-service.auth-server-url=http://alfresco-identity-service.<hostedZone>/auth
+        -Didentity-service.realm=alfresco
+        -Didentity-service.resource=alfresco
+
+        -Ds3.bucketName=${S3_BUCKET_NAME}
+        -Ds3.autoLowerCaseBucketName=true
+        -Ds3.abortIncompleteMultipartUploadDays=1
+        -Ds3.bucketLocation=${S3_BUCKET_LOCATION}
+
+        -Dsaml.keystore.location=/usr/local/tomcat/saml.keystore
+        -Dsaml.keystore.keyMetaData.location=/usr/local/tomcat/saml.properties
+        -Dsaml.sp.idp.description="IDMS as IDP"
+        -Dsaml.sp.idp.sso.request.url=http://alfresco-identity-service.<hostedZone>/auth/realms/alfresco/protocol/saml
+        -Dsaml.sp.idp.slo.request.url=http://alfresco-identity-service.<hostedZone>/auth/realms/alfresco/protocol/saml
+        -Dsaml.sp.idp.slo.response.url=http://alfresco-identity-service.<hostedZone>/auth/realms/alfresco/protocol/saml
+        -Dsaml.sp.user.mapping.id=PersonImmutableID
+
+        -Dldap.synchronization.active=true
+        -Dldap.authentication.active=false
+        -Dldap.authentication.java.naming.provider.url="ldap://jx-dbp-ids-openldap.jx-dbp-ids:389"
+        -Dldap.synchronization.java.naming.security.principal="cn=admin,dc=example,dc=org"
+        -Dldap.synchronization.java.naming.security.credentials=admin
+        -Dldap.synchronization.userSearchBase="ou=users,dc=example,dc=org"
+        -Dldap.synchronization.groupSearchBase="cn=myGroup,ou=users,dc=example,dc=org"
+        -Dldap.synchronization.syncOnStartup=true
+        -Dldap.pooling.com.sun.jndi.ldap.connect.pool.debug=all
+
+        -Dcsrf.filter.referer=http://alfresco-cs-repository.<hostedZone>
+        -Dcsrf.filter.origin=http://alfresco-cs-repository.<hostedZone>'
+  externalHost: "alfresco-cs-repository.<hostedZone>"
+  externalProtocol: "http"
+  networkpolicysetting:
+    enabled: false
+  alfresco-search:
+    persistence:
+      existingClaim: "alfresco-volume-claim"
+      search:
+        data:
+          subPath: "alfresco-content-services/solr-data"
+  alfresco-digital-workspace:
+    image:
+      tag: "1.2.0-1.beta"
+    APP_CONFIG_AUTH_TYPE: "OAUTH"
+    APP_CONFIG_OAUTH2_HOST: "http://alfresco-identity-service.<hostedZone>/auth/realms/alfresco"
+    APP_CONFIG_OAUTH2_CLIENTID: "alfresco"
+    APP_CONFIG_OAUTH2_IMPLICIT_FLOW: '"true"'
+    APP_CONFIG_OAUTH2_SILENT_LOGIN: '"true"'
+    APP_CONFIG_OAUTH2_REDIRECT_LOGIN: "/workspace/"
+    APP_CONFIG_OAUTH2_REDIRECT_LOGOUT: "/workspace/logout"
+    APP_CONFIG_OAUTH2_REDIRECT_SILENT_IFRAME_URI: "http://alfresco-cs-repository.<hostedZone>/workspace/assets/silent-refresh.html"
+    APP_BASE_SHARE_URL: "http://alfresco-cs-repository.<hostedZone>/workspace/#/preview/s"
