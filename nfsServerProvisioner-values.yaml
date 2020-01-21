@@ -1,0 +1,20 @@
+persistence:
+  enabled: true
+  storageClass: "jx-ps-gp2"
+  size: 21Gi
+
+affinity:
+  nodeAffinity:
+    requiredDuringSchedulingIgnoredDuringExecution:
+      nodeSelectorTerms:
+        - matchExpressions:
+            - key: nfsServer
+              operator: In
+              values:
+                - "true"
+
+tolerations:
+  - key: nodePurpose
+    operator: Equal
+    value: nfsServerProvisioner
+    effect: NoSchedule

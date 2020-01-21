@@ -7,16 +7,19 @@ cleanup:
     - --cleanup
 
 global:
+  alfrescoRegistryPullSecrets: quay-registry-secret
+  postgresql:
+      existingSecret: blub
   keycloak:
     resource: alfresco
     realm: alfresco
     client: alfresco
-    url: "http://alfresco-identity-service.<hostedZone>/auth"
+    url: "http://alfresco-identity-service.@@HOSTED_ZONE@@/auth"
 
 alfresco-process-services:
-  enabled: true
-  license:
-    secretName: licenseaps
+  enabled: false
+  # license:
+  #   secretName: licenseaps
   alfresco-infrastructure:
     enabled: false
   processEngine:
@@ -31,13 +34,13 @@ alfresco-process-services:
       IDENTITY_SERVICE_AUTODETECT_BEARER_ONLY: "true"
       IDENTITY_SERVICE_TOKEN_STORE: "cookie"
       IDENTITY_SERVICE_ENABLE_BASIC_AUTH: "true"
-      IDENTITY_SERVICE_AUTH: "http://alfresco-identity-service.<hostedZone>/auth"
+      IDENTITY_SERVICE_AUTH: "http://alfresco-identity-service.@@HOSTED_ZONE@@/auth"
       JAVA_OPTS: " -Dldap.authentication.enabled=false
         -Dldap.synchronization.full.enabled=true
         -Dldap.synchronization.full.cronExpression=\"0 0 0 \\* \\* ?\"
         -Dldap.synchronization.differential.enabled=true
         -Dldap.synchronization.differential.cronExpression=\"0 0 \\*/4 \\* \\* ?\"
-        -Dldap.authentication.java.naming.provider.url=\"ldap://jx-dbp-ids-openldap.jx-dbp-ids:389\"
+        -Dldap.authentication.java.naming.provider.url=\"ldap://@@NAMESPACE@@-openldap.@@NAMESPACE@@:389\"
         -Dldap.synchronization.java.naming.security.principal=cn=admin,dc=example,dc=org
         -Dldap.synchronization.java.naming.security.credentials=admin
         -Dldap.synchronization.userSearchBase=ou=users,dc=example,dc=org
@@ -45,6 +48,7 @@ alfresco-process-services:
   postgresql:
     persistence:
       subPath: "alfresco-process-services/database-data"
+      resourcePolicy: "delete"
   persistence:
     subPath: "alfresco-process-services/process-data"
   resources:
@@ -70,9 +74,9 @@ alfresco-infrastructure:
           http: http
           https: http
         annotations:
-          external-dns.alpha.kubernetes.io/hostname: "*.<hostZone>"
+          external-dns.alpha.kubernetes.io/hostname: "*.@@HOSTED_ZONE@@"
           service.beta.kubernetes.io/aws-load-balancer-connection-idle-timeout: "3600"
-          service.beta.kubernetes.io/aws-load-balancer-ssl-cert: "arn:aws:acm:eu-west-2:<acc-number>:certificate/<cert-id>"
+          service.beta.kubernetes.io/aws-load-balancer-ssl-cert: "arn:aws:acm:@@REGION@@:@@ACC_NUMBER@@:certificate/@@CERT_ID@@"
           service.beta.kubernetes.io/aws-load-balancer-ssl-ports: https
           service.beta.kubernetes.io/aws-load-balancer-ssl-negotiation-policy: "ELBSecurityPolicy-TLS-1-2-2017-01"
   persistence:
@@ -82,7 +86,7 @@ alfresco-infrastructure:
       enabled: true
       accessModes:
         - ReadWriteMany
-      name: "jx-dbp-ids-sc"
+      name: "@@NAMESPACE@@-sc"
   activemq:
     persistence:
       subPath: "alfresco-infrastructure/activemq-data-infra"
@@ -243,13 +247,17 @@ alfresco-content-services:
     enabled: false
     activemq:
       enabled: false
+  share:
+    image:
+      repository: quay.io/alfresco/alfresco-digital-workspace-share
+      tag: "6.2.0"
   repository:
     image:
       repository: quay.io/alfresco/alfresco-digital-workspace-repo
-      tag: "6.1.0.2"
+      tag: "6.2.0"
     environment:
       # The IDENTITY_SERVICE_URI should contain the details of the ingress host and port.
-      IDENTITY_SERVICE_URI: "http://alfresco-identity-service.<hostedZone>/auth"
+      IDENTITY_SERVICE_URI: "http://alfresco-identity-service.@@HOSTED_ZONE@@/auth"
       JAVA_OPTS: ' -Dsolr.base.url=/solr
         -Dsolr.secureComms=none
         -Dindex.subsystem.name=solr6
@@ -257,15 +265,15 @@ alfresco-content-services:
         -Ddeployment.method=HELM_CHART
         -Dcsrf.filter.enabled=false
         -Xms2000M -Xmx2000M
-        -Daos.baseUrlOverwrite=http://alfresco-cs-repository.<hostedZone>/alfresco/aos
+        -Daos.baseUrlOverwrite=http://alfresco-cs-repository.@@HOSTED_ZONE@@/alfresco/aos
         -Dopencmis.context.override=true
         -Dopencmis.servletpath.override=true
         -Dopencmis.server.override=true
-        -Dopencmis.server.value=http://alfresco-cs-repository.<hostedZone>
+        -Dopencmis.server.value=http://alfresco-cs-repository.@@HOSTED_ZONE@@
         -Dauthentication.chain=identity-service1:identity-service,alfrescoNtlm1:alfrescoNtlm,ldap1:ldap
         -Didentity-service.enable-basic-auth=true
         -Didentity-service.authentication.validation.failure.silent=false
-        -Didentity-service.auth-server-url=http://alfresco-identity-service.<hostedZone>/auth
+        -Didentity-service.auth-server-url=http://alfresco-identity-service.@@HOSTED_ZONE@@/auth
         -Didentity-service.realm=alfresco
         -Didentity-service.resource=alfresco
 
@@ -277,14 +285,14 @@ alfresco-content-services:
         -Dsaml.keystore.location=/usr/local/tomcat/saml.keystore
         -Dsaml.keystore.keyMetaData.location=/usr/local/tomcat/saml.properties
         -Dsaml.sp.idp.description="IDMS as IDP"
-        -Dsaml.sp.idp.sso.request.url=http://alfresco-identity-service.<hostedZone>/auth/realms/alfresco/protocol/saml
-        -Dsaml.sp.idp.slo.request.url=http://alfresco-identity-service.<hostedZone>/auth/realms/alfresco/protocol/saml
-        -Dsaml.sp.idp.slo.response.url=http://alfresco-identity-service.<hostedZone>/auth/realms/alfresco/protocol/saml
+        -Dsaml.sp.idp.sso.request.url=http://alfresco-identity-service.@@HOSTED_ZONE@@/auth/realms/alfresco/protocol/saml
+        -Dsaml.sp.idp.slo.request.url=http://alfresco-identity-service.@@HOSTED_ZONE@@/auth/realms/alfresco/protocol/saml
+        -Dsaml.sp.idp.slo.response.url=http://alfresco-identity-service.@@HOSTED_ZONE@@/auth/realms/alfresco/protocol/saml
         -Dsaml.sp.user.mapping.id=PersonImmutableID
 
         -Dldap.synchronization.active=true
         -Dldap.authentication.active=false
-        -Dldap.authentication.java.naming.provider.url="ldap://jx-dbp-ids-openldap.jx-dbp-ids:389"
+        -Dldap.authentication.java.naming.provider.url="ldap://@@NAMESPACE@@-openldap.@@NAMESPACE@@:389"
         -Dldap.synchronization.java.naming.security.principal="cn=admin,dc=example,dc=org"
         -Dldap.synchronization.java.naming.security.credentials=admin
         -Dldap.synchronization.userSearchBase="ou=users,dc=example,dc=org"
@@ -292,9 +300,9 @@ alfresco-content-services:
         -Dldap.synchronization.syncOnStartup=true
         -Dldap.pooling.com.sun.jndi.ldap.connect.pool.debug=all
 
-        -Dcsrf.filter.referer=http://alfresco-cs-repository.<hostedZone>
-        -Dcsrf.filter.origin=http://alfresco-cs-repository.<hostedZone>'
-  externalHost: "alfresco-cs-repository.<hostedZone>"
+        -Dcsrf.filter.referer=http://alfresco-cs-repository.@@HOSTED_ZONE@@
+        -Dcsrf.filter.origin=http://alfresco-cs-repository.@@HOSTED_ZONE@@'
+  externalHost: "alfresco-cs-repository.@@HOSTED_ZONE@@"
   externalProtocol: "http"
   networkpolicysetting:
     enabled: false
@@ -306,13 +314,13 @@ alfresco-content-services:
           subPath: "alfresco-content-services/solr-data"
   alfresco-digital-workspace:
     image:
-      tag: "1.2.0-1.beta"
+      tag: "1.3.0"
     APP_CONFIG_AUTH_TYPE: "OAUTH"
-    APP_CONFIG_OAUTH2_HOST: "http://alfresco-identity-service.<hostedZone>/auth/realms/alfresco"
+    APP_CONFIG_OAUTH2_HOST: "http://alfresco-identity-service.@@HOSTED_ZONE@@/auth/realms/alfresco"
     APP_CONFIG_OAUTH2_CLIENTID: "alfresco"
     APP_CONFIG_OAUTH2_IMPLICIT_FLOW: '"true"'
     APP_CONFIG_OAUTH2_SILENT_LOGIN: '"true"'
     APP_CONFIG_OAUTH2_REDIRECT_LOGIN: "/workspace/"
     APP_CONFIG_OAUTH2_REDIRECT_LOGOUT: "/workspace/logout"
-    APP_CONFIG_OAUTH2_REDIRECT_SILENT_IFRAME_URI: "http://alfresco-cs-repository.<hostedZone>/workspace/assets/silent-refresh.html"
-    APP_BASE_SHARE_URL: "http://alfresco-cs-repository.<hostedZone>/workspace/#/preview/s"
+    APP_CONFIG_OAUTH2_REDIRECT_SILENT_IFRAME_URI: "http://alfresco-cs-repository.@@HOSTED_ZONE@@/workspace/assets/silent-refresh.html"
+    APP_BASE_SHARE_URL: "http://alfresco-cs-repository.@@HOSTED_ZONE@@/workspace/#/preview/s"

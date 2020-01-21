@@ -1,13 +1,5 @@
 # See http://help.github.com/ignore-files/ for more about ignoring files.
 
-# compiled output
-/dist
-/tmp
-/out-tsc
-
-# dependencies
-/node_modules
-
 # IDEs and editors
 /.idea
 .project
@@ -25,29 +17,12 @@
 !.vscode/extensions.json
 
 # misc
-/.sass-cache
-/connect.lock
-/coverage
-/libpeerconnection.log
-npm-debug.log
-yarn-error.log
-testem.log
-/typings
-docker/ldap/ldap/lock.mdb
-docker/scripts/saml-deployment.cert
-docker/scripts/config-files/aos-saml-client-edit.json
-docker/scripts/config-files/share-saml-client-edit.json
-docker/scripts/config-files/ldap-auth-defn-edit.json
+scripts/saml-deployment.cert
+scripts/config-files/aos-saml-client-edit.json
+scripts/config-files/share-saml-client-edit.json
+scripts/config-files/ldap-auth-defn-edit.json
+ids-values-edit.yaml
 
 # System Files
 .DS_Store
 Thumbs.db
-
-# Maven
-target/
-overlays/
-*.log
-*.log.*
-
-# ACA integration
-projects/alfresco-content-app

@@ -20,6 +20,16 @@ kubectl get svc
 
 As we are using an S3 bucket for ACS you need to grand the nodegroup "ng-1" access to the created bucket.
 
+### Create EKS cluster with Fargate
+
+Use eksctl for creating and connecting to EKS
+
+```
+eksctl create cluster -f cluster-fargate.yaml
+```
+
+Notice: the region is changes, as to the time of this writing the Fargate EKS extension couldn't be applied in London region!
+
 ### Setup & Connect to EKS Dashboard
 
 The k8s dashboard is useful for debugging the k8s deployment \
@@ -95,6 +105,11 @@ make build
 make install
 ```
 
+5. Check pods
+```
+kubectl get pods --all-namespaces --output wide
+```
+
 ### DBP URLs
 
 - http://alfresco-identity-service.<hostedZone>/auth
@@ -122,3 +137,8 @@ Password: admin
 ```
 make delete
 ```
+## Know Issues
+Avoid starting in bad availability zone for us-east-1 https://github.com/weaveworks/eksctl/issues/905 .
+
+## Ideas
+* Use CFN, CDK or Terraform for setting up EFS, S3
